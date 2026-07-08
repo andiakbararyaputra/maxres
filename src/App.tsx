@@ -24,6 +24,7 @@ import {
   UNSUPPORTED_FILE_MESSAGE,
 } from "./lib/files";
 import { startUpscale, type UpscaleJob } from "./lib/upscaler";
+import { getUpscaleCount, incrementUpscaleCount } from "./lib/counter";
 import "./styles/tokens.css";
 import "./App.css";
 
@@ -35,9 +36,15 @@ function fileName(path: string): string {
 function App() {
   const [state, dispatch] = useReducer(reduce, initialState);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [upscaleCount, setUpscaleCount] = useState(0);
   // The running job handle, kept in a ref so the cancel button can reach it
   // without re-rendering on every progress tick.
   const jobRef = useRef<UpscaleJob | null>(null);
+
+  // Load the local-only counter once at startup.
+  useEffect(() => {
+    getUpscaleCount().then(setUpscaleCount);
+  }, []);
 
   /** Shared by drag-drop and browse: validate, then accept or reject. */
   function selectFile(path: string) {
@@ -101,6 +108,10 @@ function App() {
     jobRef.current = null;
     if (result.ok) {
       dispatch({ type: "SUCCESS", outputPath: result.outputPath });
+      // Local-only stat — stored on this device, sent nowhere.
+      incrementUpscaleCount().then((n) => {
+        if (n > 0) setUpscaleCount(n);
+      });
     } else if (result.reason === "cancelled") {
       dispatch({ type: "RESET" });
     } else {
@@ -187,6 +198,11 @@ function App() {
           ●
         </span>
         100% offline — your photos never leave your device
+        {upscaleCount > 0 && (
+          <span className="app__footer-count">
+            · {upscaleCount} photo{upscaleCount === 1 ? "" : "s"} upscaled
+          </span>
+        )}
       </footer>
     </main>
   );

@@ -10,6 +10,7 @@
       "identifier": "shell:allow-spawn",
       "allow": [{ "name": "binaries/upscaler", "sidecar": true, "args": true }]
     },
-    "shell:allow-kill"
+    "shell:allow-kill",
+    "store:default"
   ]
 }

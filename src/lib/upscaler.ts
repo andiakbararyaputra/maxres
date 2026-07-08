@@ -65,11 +65,14 @@ export function startUpscale(
   };
 
   async function run(): Promise<UpscaleResult> {
-    const finalOutput = deriveOutputPath(inputPath, factor);
     const steps = planUpscale(factor);
     const tempFiles: string[] = [];
 
     try {
+      // Never overwrite: if photo_4x.png exists, Rust returns "photo_4x (2).png".
+      const finalOutput = await invoke<string>("unique_output_path", {
+        desired: deriveOutputPath(inputPath, factor),
+      });
       const modelsDir = await resolveResource("models");
       const tmp = await tempDir();
 
@@ -174,7 +177,13 @@ export function startUpscale(
     ]);
 
     // The engine reports progress on stderr as lines like "25.00%".
+    // It can also print "decode image ... failed" and STILL exit 0, so we
+    // watch for that and verify the output file afterwards.
+    let decodeFailed = false;
     command.stderr.on("data", (line: string) => {
+      if (line.includes("decode image") && line.includes("failed")) {
+        decodeFailed = true;
+      }
       const match = line.match(/(\d+(?:\.\d+)?)%/);
       if (match) {
         onPassProgress(Math.min(100, Math.round(parseFloat(match[1]))));
@@ -190,16 +199,24 @@ export function startUpscale(
             reason: "cancelled",
             message: "Upscaling cancelled.",
           });
-        } else if (payload.code === 0) {
-          resolve({ ok: true, outputPath: output });
-        } else {
-          resolve({
-            ok: false,
-            reason: "engine-failed",
-            message:
-              "The upscaler couldn't process this image. Is it a valid JPG, PNG, or WebP?",
-          });
+          return;
         }
+        // Trust nothing: the engine can exit 0 without producing a file.
+        void (async () => {
+          const produced = await invoke<boolean>("file_exists", {
+            path: output,
+          });
+          if (payload.code === 0 && !decodeFailed && produced) {
+            resolve({ ok: true, outputPath: output });
+          } else {
+            resolve({
+              ok: false,
+              reason: "engine-failed",
+              message:
+                "The upscaler couldn't process this image. Is it a valid JPG, PNG, or WebP?",
+            });
+          }
+        })();
       });
 
       command.on("error", (err: string) => {
