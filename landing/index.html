@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MaxRes — Free, offline AI image upscaler</title>
+    <meta
+      name="description"
+      content="MaxRes makes any photo print-ready. Free, 100% offline AI image upscaler (2x/4x/8x/16x). Your photos never leave your device."
+    />
+    <style>
+      :root {
+        --bg: #101014;
+        --surface: #1a1a21;
+        --border: #2a2a33;
+        --text: #e8e8ee;
+        --text-dim: #8a8a96;
+        --accent: #4f8cff;
+        --success: #3ddc84;
+        --radius: 12px;
+        --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 64px 24px;
+      }
+      header {
+        text-align: center;
+        margin-bottom: 56px;
+      }
+      h1 {
+        font-size: 48px;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+      }
+      .tagline {
+        font-size: 20px;
+        color: var(--text-dim);
+      }
+      .badges {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 24px;
+        font-size: 14px;
+        color: var(--text-dim);
+      }
+      .badge {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 6px 14px;
+      }
+      .downloads {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin: 40px 0;
+      }
+      .dl {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 24px;
+        text-decoration: none;
+        color: var(--text);
+        transition:
+          border-color 0.15s ease,
+          transform 0.15s ease;
+      }
+      .dl:hover {
+        border-color: var(--accent);
+        transform: translateY(-2px);
+      }
+      .dl strong {
+        font-size: 18px;
+      }
+      .dl span {
+        font-size: 13px;
+        color: var(--text-dim);
+      }
+      section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 28px;
+        margin: 24px 0;
+      }
+      h2 {
+        font-size: 22px;
+        margin-bottom: 16px;
+      }
+      ol,
+      ul {
+        padding-left: 22px;
+      }
+      li {
+        margin: 6px 0;
+      }
+      .warn {
+        border-color: #4a3a1a;
+        background: #1c180f;
+      }
+      code {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 1px 6px;
+        font-size: 13px;
+      }
+      a {
+        color: var(--accent);
+      }
+      footer {
+        text-align: center;
+        color: var(--text-dim);
+        font-size: 14px;
+        margin-top: 48px;
+      }
+      .dot {
+        color: var(--success);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>MaxRes</h1>
+        <p class="tagline">Make any photo print-ready</p>
+        <div class="badges">
+          <span class="badge">Free forever</span>
+          <span class="badge">100% offline</span>
+          <span class="badge">No account</span>
+          <span class="badge">Up to 16x</span>
+        </div>
+      </header>
+
+      <div class="downloads">
+        <a
+          class="dl"
+          href="https://github.com/andiakbararyaputra/maxres/releases/latest"
+        >
+          <strong>Windows</strong>
+          <span>.msi / .exe</span>
+        </a>
+        <a
+          class="dl"
+          href="https://github.com/andiakbararyaputra/maxres/releases/latest"
+        >
+          <strong>macOS</strong>
+          <span>.dmg</span>
+        </a>
+        <a
+          class="dl"
+          href="https://github.com/andiakbararyaputra/maxres/releases/latest"
+        >
+          <strong>Linux</strong>
+          <span>.AppImage / .deb / .rpm</span>
+        </a>
+      </div>
+
+      <section>
+        <h2>What it does</h2>
+        <p>
+          Drop a photo in, pick a size (2x, 4x, 8x, or 16x), and MaxRes uses AI
+          to enlarge it into a crisp, print-ready image — saved right next to
+          your original. Everything happens on your own computer.
+        </p>
+      </section>
+
+      <section>
+        <h2>Your photos stay private</h2>
+        <p>
+          MaxRes has no network access at all. There are no uploads, no
+          accounts, and no tracking. It's the perfect tool for restoring
+          personal and family photos you'd never want to send to a website.
+        </p>
+      </section>
+
+      <section class="warn">
+        <h2>First launch: security warning</h2>
+        <p>
+          MaxRes is free and open-source, so its installers aren't code-signed
+          (certificates cost money we don't charge you for). Your system may
+          warn that the app is from an "unidentified developer" — this is
+          expected. To open it:
+        </p>
+        <ul>
+          <li>
+            <strong>Windows:</strong> click <code>More info</code> →
+            <code>Run anyway</code>
+          </li>
+          <li>
+            <strong>macOS:</strong> right-click the app → <code>Open</code> →
+            <code>Open</code>
+          </li>
+        </ul>
+      </section>
+
+      <footer>
+        <p>
+          <span class="dot">●</span> 100% offline · Free · Open source (GPL-3.0)
+        </p>
+        <p style="margin-top: 8px">
+          <a href="https://github.com/andiakbararyaputra/maxres"
+            >View on GitHub</a
+          >
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>
