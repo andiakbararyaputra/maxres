@@ -7,7 +7,7 @@ DO NOT delete historical context if it is still relevant. Compress older complet
 
 ## 🏗️ Active Phase & Goal
 
-**Current Task:** Phase 3 COMPLETE ✅ — next up is Phase 4 (Harden & ship)
+**Current Task:** Phase 3 COMPLETE ✅ + pre-ship cleanup done — next up is Phase 4 (Harden & ship)
 **Next Steps (Phase 4):**
 
 1. Error matrix from agent_docs/testing.md: bad file, huge file, cancel mid-job, offline test, filename with spaces/unicode, transparent PNG
@@ -39,6 +39,9 @@ _(Log specific choices made during the build here so future agents respect them)
 - 2026-07-08 — Capability change (approved): `shell:allow-execute` → `shell:allow-spawn` (same sidecar scope) + `shell:allow-kill`, because progress streaming + cancel need spawn()/kill() instead of execute().
 - 2026-07-08 — Progress: engine prints "NN.NN%" per pass on stderr; upscaler maps each pass into its plan step's progress range (e.g. 16x pass 1 = 0-50). Reducer ignores backwards PROGRESS events.
 - 2026-07-08 — 16x shows a pre-flight `ask()` warning dialog (dialog:default covers it). Cancel kills the current child; cancelled jobs RESET to idle; temp intermediates cleaned in a finally block.
+- 2026-07-08 — Pre-ship cleanup (commit 7112f2e): engine stripped 11M→9.7M (byte-identical output verified via sha256); release profile added (LTO, strip, opt-level=s, panic=abort, codegen-units=1) → app binary 5.3M; package renamed maxres-scaffold→maxres (Cargo name + lib `maxres_lib` + main.rs call); demo SVGs removed, favicon → /icon.png; cloned template repo deleted.
+- 2026-07-08 — First successful release build: deb 36M, rpm 36M, AppImage 108M (bundles GTK; deb/rpm use system GTK). Installers copied to ~/maxres-installers/. Build cache cleaned (freed 10.5GB); next build recompiles ~5min.
+- 2026-07-08 — NOTE: AppImage bundling downloads linuxdeploy/AppRun tooling from GitHub at BUILD time (not runtime) — the shipped app is still fully offline. deb/rpm need no downloads.
 
 ## 🐛 Known Issues & Quirks
 
