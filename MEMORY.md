@@ -7,15 +7,14 @@ DO NOT delete historical context if it is still relevant. Compress older complet
 
 ## 🏗️ Active Phase & Goal
 
-**Current Task:** Phase 3 COMPLETE ✅ + pre-ship cleanup done — next up is Phase 4 (Harden & ship)
-**Next Steps (Phase 4):**
+**Current Task:** Phase 4 code COMPLETE ✅ — only the user-side GitHub publish remains (create repo, push, tag v0.1.0 → CI builds installers)
+**Next Steps (publish — user does these):**
 
-1. Error matrix from agent_docs/testing.md: bad file, huge file, cancel mid-job, offline test, filename with spaces/unicode, transparent PNG
-2. Local upscale counter (tauri-plugin-store — permission addition needs approval) + footer display
-3. Output-name collision handling (photo_4x.png already exists → photo_4x (2).png)
-4. Rename Cargo package maxres-scaffold → maxres; app icon; window polish
-5. Cross-platform: Windows/macOS engine binaries + `npm run tauri build` installers
-6. GitHub repo + v0.1.0 release + landing page with unsigned-app bypass instructions
+1. Create empty GitHub repo `andiakbararyaputra/maxres` (no README/license — we have them)
+2. `git remote add origin ...`, `git push -u origin main`
+3. `git tag v0.1.0 && git push origin v0.1.0` → release.yml builds Win/mac/Linux → draft Release
+4. Review draft release, publish it; deploy `landing/` to Netlify/Vercel (drag-drop the folder)
+5. Post-launch: verify Windows DLL loading + macOS Rosetta on real hardware (couldn't test on Linux)
 
 ## 📂 Architectural Decisions
 
@@ -42,6 +41,8 @@ _(Log specific choices made during the build here so future agents respect them)
 - 2026-07-08 — Pre-ship cleanup (commit 7112f2e): engine stripped 11M→9.7M (byte-identical output verified via sha256); release profile added (LTO, strip, opt-level=s, panic=abort, codegen-units=1) → app binary 5.3M; package renamed maxres-scaffold→maxres (Cargo name + lib `maxres_lib` + main.rs call); demo SVGs removed, favicon → /icon.png; cloned template repo deleted.
 - 2026-07-08 — First successful release build: deb 36M, rpm 36M, AppImage 108M (bundles GTK; deb/rpm use system GTK). Installers copied to ~/maxres-installers/. Build cache cleaned (freed 10.5GB); next build recompiles ~5min.
 - 2026-07-08 — NOTE: AppImage bundling downloads linuxdeploy/AppRun tooling from GitHub at BUILD time (not runtime) — the shipped app is still fully offline. deb/rpm need no downloads.
+- 2026-07-08 — Phase 4 (commits 88cb982, 3a470a4, dffdc09, 2c79194): collision-safe names (`unique_output_path` Rust cmd, unit-tested); local counter via store plugin (`store:default` approved) shown in footer; corrupt-file hardening (`file_exists` cmd + decode-failed stderr detection — engine exits 0 with no output on bad files); GPL-3.0 LICENSE + THIRD_PARTY_LICENSES.md (engine BSD-3) + real README; Win/mac engine binaries added (100M total, 4 targets); vcomp140 DLLs bundled as resources for Windows; release.yml CI workflow (tag v* → all-platform installers); dark landing page in `landing/`.
+- 2026-07-08 — GPU: real Intel UHD 620 present (not CPU-only as earlier thought) — engine uses Vulkan, faster than llvmpipe fallback.
 
 ## 🐛 Known Issues & Quirks
 
@@ -54,13 +55,12 @@ _(Log current bugs or weird workarounds here)_
 - LESSON: a chat-applied edit to an OPEN editor file can sit unsaved (● in tab) — the app reads DISK. If config changes seem ignored, `cat` the file to compare. Cost us one debugging round on capabilities.
 - LESSON: always try/catch around plugin calls — a rejected promise (e.g. permission denied) otherwise leaves the state machine stuck in `processing` forever.
 - LESSON: verify engine output CONTENT, not just dimensions — the -s bug produced correctly-sized but corrupted images. Cheap heuristics (edge stddev) missed it; ground-truth RMSE comparison caught it.
-- Engine quirk: exits 0 even when GPU memory runs low on SOME tiles (paints them gray) — rare on CPU/llvmpipe; revisit if users report gray patches (Phase 4 could add an output sanity check).
-- Windows/macOS binaries not yet placed — cross-platform bundling happens in Phase 4.
-- Cargo package still named `maxres-scaffold` (cosmetic; binary name only) — rename in Phase 4.
+- Engine quirk: exits 0 even on a fully bad decode (prints "decode image ... failed", writes NO output). Handled: upscaler checks `file_exists` + watches for that stderr line. Also can paint gray tiles on low GPU memory — revisit if users report gray patches.
+- RISK (untested on Linux): Windows engine needs vcomp140.dll next to the .exe — bundled as resources but real Windows load path unverified. macOS aarch64 reuses the x86_64 engine via Rosetta — verify on real Apple Silicon. Both flagged for post-launch hardware testing.
 
 ## 📜 Completed Phases
 
 - [x] Phase 1: Scaffold (Tauri app + dark shell UI + file drop) — done 2026-07-08
 - [x] Phase 2: Sidecar integration (engine bundled + native 4x works end-to-end) — done 2026-07-08
 - [x] Phase 3: Upscale logic (all four factors via chaining + progress bar + cancel + 16x warning) — done 2026-07-08
-- [ ] Phase 4: Harden & ship (error matrix, counter, builds, GitHub release)
+- [x] Phase 4: Harden & ship — code done 2026-07-08 (collision-safe names, counter, corrupt-file hardening, docs+license, cross-platform binaries, CI workflow, landing page). Publish = user-side.
