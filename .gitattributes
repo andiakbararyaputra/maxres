@@ -1,0 +1,13 @@
+# Normalize all text files to LF so Prettier's --check passes on every OS.
+# Without this, Windows checks out CRLF and `prettier --check .` fails in CI.
+* text=auto eol=lf
+
+# Engine binaries and models must NEVER be line-ending converted (would corrupt
+# the executables/DLLs on a Windows checkout and break the sidecar).
+src-tauri/binaries/upscaler-* binary
+*.exe binary
+*.dll binary
+*.bin binary
+*.png binary
+*.ico binary
+*.icns binary
