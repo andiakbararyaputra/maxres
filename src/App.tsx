@@ -2,27 +2,30 @@
  * MaxRes — one screen, one job.
  * App.tsx owns the state machine and talks to Tauri (drag-drop events,
  * file dialog). Components below it just render state.
- * Phase 2 scope: the engine-native 4x pass runs end-to-end.
- * 2x/8x/16x chaining arrives in Phase 3.
+ * Phase 3: all four factors (2/4/8/16) run natively with live progress
+ * and a cancel button; 16x asks for confirmation first (memory heads-up).
  */
 
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
-import { open } from "@tauri-apps/plugin-dialog";
+import { open, ask } from "@tauri-apps/plugin-dialog";
 import { DropZone } from "./components/drop-zone";
 import { FactorPicker } from "./components/factor-picker";
-import { initialState, reduce, type Factor } from "./lib/app-state";
+import {
+  initialState,
+  reduce,
+  EXPERIMENTAL_FACTOR,
+  FACTORS,
+  type Factor,
+} from "./lib/app-state";
 import {
   isSupportedImagePath,
   IMAGE_DIALOG_FILTER,
   UNSUPPORTED_FILE_MESSAGE,
 } from "./lib/files";
-import { upscale } from "./lib/upscaler";
+import { startUpscale, type UpscaleJob } from "./lib/upscaler";
 import "./styles/tokens.css";
 import "./App.css";
-
-/** Phase 2: only the engine-native 4x is live. Phase 3 unlocks the rest. */
-const AVAILABLE_FACTORS: readonly Factor[] = [4];
 
 function fileName(path: string): string {
   const parts = path.split(/[/\\]/);
@@ -32,6 +35,9 @@ function fileName(path: string): string {
 function App() {
   const [state, dispatch] = useReducer(reduce, initialState);
   const [isDragActive, setIsDragActive] = useState(false);
+  // The running job handle, kept in a ref so the cancel button can reach it
+  // without re-rendering on every progress tick.
+  const jobRef = useRef<UpscaleJob | null>(null);
 
   /** Shared by drag-drop and browse: validate, then accept or reject. */
   function selectFile(path: string) {
@@ -71,17 +77,39 @@ function App() {
     if (typeof picked === "string") selectFile(picked);
   }
 
-  /** fileReady + factor click → run the engine → done or error. */
-  async function startUpscale(factor: Factor) {
+  /** fileReady + factor click → (confirm 16x) → run engine → done/error. */
+  async function onSelectFactor(factor: Factor) {
     if (state.status !== "fileReady") return;
     const inputPath = state.filePath;
+
+    // 16x is large and slow; warn before committing (PRD requirement).
+    if (factor === EXPERIMENTAL_FACTOR) {
+      const proceed = await ask(
+        "16x is experimental — it makes a very large image and can be slow or run out of memory on some machines. Continue?",
+        { title: "Upscale 16x?", kind: "warning" },
+      );
+      if (!proceed) return;
+    }
+
     dispatch({ type: "START", factor });
-    const result = await upscale(inputPath, factor);
+    const job = startUpscale(inputPath, factor, (percent) =>
+      dispatch({ type: "PROGRESS", progress: percent }),
+    );
+    jobRef.current = job;
+
+    const result = await job.result;
+    jobRef.current = null;
     if (result.ok) {
       dispatch({ type: "SUCCESS", outputPath: result.outputPath });
+    } else if (result.reason === "cancelled") {
+      dispatch({ type: "RESET" });
     } else {
       dispatch({ type: "FAIL", message: result.message });
     }
+  }
+
+  async function cancel() {
+    await jobRef.current?.cancel();
   }
 
   const filePath =
@@ -91,12 +119,7 @@ function App() {
       ? state.filePath
       : null;
 
-  const enabledFactors = state.status === "fileReady" ? AVAILABLE_FACTORS : [];
-
-  const factorHint =
-    state.status === "idle"
-      ? "Drop a photo to choose a size"
-      : "4x is ready — more sizes arrive in the next build step";
+  const enabledFactors = state.status === "fileReady" ? FACTORS : [];
 
   return (
     <main className="app">
@@ -110,15 +133,35 @@ function App() {
       />
 
       <div>
-        <FactorPicker enabledFactors={enabledFactors} onSelect={startUpscale} />
+        <FactorPicker
+          enabledFactors={enabledFactors}
+          onSelect={onSelectFactor}
+        />
         {(state.status === "idle" || state.status === "fileReady") && (
-          <p className="factor-hint">{factorHint}</p>
+          <p className="factor-hint">
+            {state.status === "idle"
+              ? "Drop a photo to choose a size"
+              : "Pick a size — 4x is a great default"}
+          </p>
         )}
       </div>
 
       <div className="status-line" role="status">
         {state.status === "processing" && (
-          <span>Upscaling {state.factor}x… big photos can take a minute</span>
+          <div className="progress">
+            <div className="progress__track">
+              <div
+                className="progress__bar"
+                style={{ width: `${state.progress}%` }}
+              />
+            </div>
+            <span className="progress__label">
+              Upscaling {state.factor}x… {state.progress}%
+            </span>
+            <button type="button" className="btn-reset" onClick={cancel}>
+              Cancel
+            </button>
+          </div>
         )}
         {state.status === "done" && (
           <>

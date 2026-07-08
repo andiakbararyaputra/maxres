@@ -7,13 +7,15 @@ DO NOT delete historical context if it is still relevant. Compress older complet
 
 ## 🏗️ Active Phase & Goal
 
-**Current Task:** Phase 2 COMPLETE ✅ — next up is Phase 3 (Upscale logic): full factor orchestration for 2x/8x/16x
-**Next Steps (Phase 3):**
+**Current Task:** Phase 3 COMPLETE ✅ — next up is Phase 4 (Harden & ship)
+**Next Steps (Phase 4):**
 
-1. 2x: run native 4x pass → downscale result 50% (canvas or image lib; needs fs read/write permission — protected-area approval required)
-2. 8x: chain two passes via temp file → downscale 50%; 16x: two passes + pre-flight Experimental warning dialog
-3. Parse engine stderr progress (%) into a real progress bar; add cancel button (switch execute() → spawn() with child.kill())
-4. Local upscale counter (tauri-plugin-store); temp-file cleanup on failure/cancel
+1. Error matrix from agent_docs/testing.md: bad file, huge file, cancel mid-job, offline test, filename with spaces/unicode, transparent PNG
+2. Local upscale counter (tauri-plugin-store — permission addition needs approval) + footer display
+3. Output-name collision handling (photo_4x.png already exists → photo_4x (2).png)
+4. Rename Cargo package maxres-scaffold → maxres; app icon; window polish
+5. Cross-platform: Windows/macOS engine binaries + `npm run tauri build` installers
+6. GitHub repo + v0.1.0 release + landing page with unsigned-app bypass instructions
 
 ## 📂 Architectural Decisions
 
@@ -32,6 +34,11 @@ _(Log specific choices made during the build here so future agents respect them)
 - 2026-07-08 — Capability added (approved): scoped `shell:allow-execute` for sidecar `binaries/upscaler` only, args:true. Still NO network/fs permissions.
 - 2026-07-08 — `src/lib/upscaler.ts` is the only module that talks to the engine; returns typed UpscaleResult, catches ALL failures including spawn errors (engine-unavailable), OOM detection via stderr `vkAllocateMemory`.
 - 2026-07-08 — Phase 2 ships native 4x only; AVAILABLE_FACTORS=[4] in App.tsx gates the buttons.
+- 2026-07-08 — Phase 3: engine `-s` flag is BROKEN for non-4 values with realesrgan-x4plus (RMSE 0.43 vs ground truth, corrupted seams — verified). NEVER use -s. Factors built by chaining native 4x passes: 2x = 4x→halve; 8x = 4x→halve→4x (halve BEFORE 2nd pass = memory-friendly); 16x = 4x→4x. Plan logic in `src/lib/plan.ts` (pure, unit-tested planScale invariant).
+- 2026-07-08 — Two tiny Rust commands in lib.rs (only non-ML native code): `halve_image` (image crate, PNG-only features, Lanczos3) and `remove_temp_file` (refuses paths outside OS temp dir — safe by construction). No new capabilities needed for them.
+- 2026-07-08 — Capability change (approved): `shell:allow-execute` → `shell:allow-spawn` (same sidecar scope) + `shell:allow-kill`, because progress streaming + cancel need spawn()/kill() instead of execute().
+- 2026-07-08 — Progress: engine prints "NN.NN%" per pass on stderr; upscaler maps each pass into its plan step's progress range (e.g. 16x pass 1 = 0-50). Reducer ignores backwards PROGRESS events.
+- 2026-07-08 — 16x shows a pre-flight `ask()` warning dialog (dialog:default covers it). Cancel kills the current child; cancelled jobs RESET to idle; temp intermediates cleaned in a finally block.
 
 ## 🐛 Known Issues & Quirks
 
@@ -43,11 +50,14 @@ _(Log current bugs or weird workarounds here)_
 - Dev machine has no GPU Vulkan driver — engine falls back to llvmpipe (CPU): works but slow (220px→4x ≈ 8s). Real GPUs will be much faster; keep test images small in dev.
 - LESSON: a chat-applied edit to an OPEN editor file can sit unsaved (● in tab) — the app reads DISK. If config changes seem ignored, `cat` the file to compare. Cost us one debugging round on capabilities.
 - LESSON: always try/catch around plugin calls — a rejected promise (e.g. permission denied) otherwise leaves the state machine stuck in `processing` forever.
+- LESSON: verify engine output CONTENT, not just dimensions — the -s bug produced correctly-sized but corrupted images. Cheap heuristics (edge stddev) missed it; ground-truth RMSE comparison caught it.
+- Engine quirk: exits 0 even when GPU memory runs low on SOME tiles (paints them gray) — rare on CPU/llvmpipe; revisit if users report gray patches (Phase 4 could add an output sanity check).
 - Windows/macOS binaries not yet placed — cross-platform bundling happens in Phase 4.
+- Cargo package still named `maxres-scaffold` (cosmetic; binary name only) — rename in Phase 4.
 
 ## 📜 Completed Phases
 
 - [x] Phase 1: Scaffold (Tauri app + dark shell UI + file drop) — done 2026-07-08
 - [x] Phase 2: Sidecar integration (engine bundled + native 4x works end-to-end) — done 2026-07-08
-- [ ] Phase 3: Upscale logic (all four factors + progress/error states + output naming)
+- [x] Phase 3: Upscale logic (all four factors via chaining + progress bar + cancel + 16x warning) — done 2026-07-08
 - [ ] Phase 4: Harden & ship (error matrix, counter, builds, GitHub release)

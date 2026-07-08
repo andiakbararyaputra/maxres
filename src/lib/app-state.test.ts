@@ -6,6 +6,7 @@ const processing: AppState = {
   status: "processing",
   filePath: "/p/a.jpg",
   factor: 4,
+  progress: 0,
 };
 
 describe("app state machine", () => {
@@ -28,6 +29,20 @@ describe("app state machine", () => {
   it("fileReady → processing on START", () => {
     const next = reduce(fileReady, { type: "START", factor: 4 });
     expect(next).toEqual(processing);
+  });
+
+  it("PROGRESS updates percent and never goes backwards", () => {
+    const at50 = reduce(processing, { type: "PROGRESS", progress: 50 });
+    expect(at50).toEqual({ ...processing, progress: 50 });
+    // A stale lower value is ignored.
+    const stillfifty = reduce(at50, { type: "PROGRESS", progress: 20 });
+    expect(stillfifty).toEqual({ ...processing, progress: 50 });
+  });
+
+  it("PROGRESS is ignored outside processing", () => {
+    expect(reduce(fileReady, { type: "PROGRESS", progress: 40 })).toEqual(
+      fileReady,
+    );
   });
 
   it("START is ignored unless a file is ready (no phantom jobs)", () => {

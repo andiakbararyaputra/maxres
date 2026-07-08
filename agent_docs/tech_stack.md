@@ -26,9 +26,12 @@ npm run tauri build  # produce installers (.msi/.exe, .dmg, .AppImage/.deb)
 - Executable lives in `src-tauri/binaries/` and MUST be renamed to include the platform target triple, e.g. `upscaler-x86_64-unknown-linux-gnu`, `upscaler-x86_64-pc-windows-msvc.exe`, `upscaler-aarch64-apple-darwin`
 - The `models/` folder ships alongside it (bundle as Tauri resources)
 - Declared in `tauri.conf.json` under `bundle.externalBin` and permitted in the capabilities file
-- Invocation args: `-i <input> -o <output> -n realesrgan-x4plus`
-- Factor orchestration happens in OUR TypeScript code:
-  - **4x:** one pass. **2x:** one pass → canvas downscale 50%. **8x:** two passes → downscale 50%. **16x:** two passes (warn first — RAM/VRAM heavy)
+- Invocation args: `-i <input> -o <output> -n realesrgan-x4plus -m <resolved models dir>`
+- **The engine's `-s` flag is BROKEN** for anything except 4 with the x4plus model (corrupted output, verified 2026-07-08). Never pass `-s`.
+- Factor orchestration lives in `src/lib/plan.ts` + `src/lib/upscaler.ts` (chained native 4x passes only):
+  - **4x:** one pass. **2x:** one pass → Rust `halve_image` ÷2. **8x:** pass → halve (=2x) → pass (halve FIRST = memory-friendly). **16x:** two passes (warn first — RAM/VRAM heavy)
+- Intermediates go to the OS temp dir; cleaned up via Rust `remove_temp_file` (refuses non-temp paths)
+- The only native code we own: two small Rust commands in `src-tauri/src/lib.rs` (`halve_image`, `remove_temp_file`) — plain resizing/cleanup, no ML
 
 ## Error Handling Pattern
 

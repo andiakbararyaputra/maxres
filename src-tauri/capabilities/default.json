@@ -1,14 +1,15 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "MaxRes main window — minimal permissions by design (offline promise). Approved additions only: core + dialog (Phase 1). Sidecar/fs arrive with Phase 2 approval.",
+  "description": "MaxRes main window — minimal permissions by design (offline promise). Approved: core + dialog (Phase 1), scoped sidecar spawn/kill for progress + cancel (Phase 3). No network, no fs.",
   "windows": ["main"],
   "permissions": [
     "core:default",
     "dialog:default",
     {
-      "identifier": "shell:allow-execute",
+      "identifier": "shell:allow-spawn",
       "allow": [{ "name": "binaries/upscaler", "sidecar": true, "args": true }]
-    }
+    },
+    "shell:allow-kill"
   ]
 }

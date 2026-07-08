@@ -3,19 +3,18 @@
  *   idle → fileReady → processing → done | error
  * One explicit machine instead of scattered booleans, so the UI can
  * never show contradictory states (e.g. "processing" with no file).
- * Phase 1 uses idle/fileReady; processing/done/error are wired in Phase 3.
  */
 
 export const FACTORS = [2, 4, 8, 16] as const;
 export type Factor = (typeof FACTORS)[number];
 
-/** 16x chains two engine passes and can exhaust memory on older machines. */
+/** 16x is large (16× each side = 256× pixels) and can exhaust memory on older machines. */
 export const EXPERIMENTAL_FACTOR: Factor = 16;
 
 export type AppState =
   | { status: "idle" }
   | { status: "fileReady"; filePath: string }
-  | { status: "processing"; filePath: string; factor: Factor }
+  | { status: "processing"; filePath: string; factor: Factor; progress: number }
   | { status: "done"; filePath: string; outputPath: string }
   | { status: "error"; message: string };
 
@@ -23,6 +22,7 @@ export type AppEvent =
   | { type: "FILE_SELECTED"; filePath: string }
   | { type: "FILE_REJECTED"; message: string }
   | { type: "START"; factor: Factor }
+  | { type: "PROGRESS"; progress: number }
   | { type: "SUCCESS"; outputPath: string }
   | { type: "FAIL"; message: string }
   | { type: "RESET" };
@@ -52,7 +52,13 @@ export function reduce(state: AppState, event: AppEvent): AppState {
         status: "processing",
         filePath: state.filePath,
         factor: event.factor,
+        progress: 0,
       };
+
+    case "PROGRESS":
+      // Only meaningful mid-job; ignored otherwise. Never goes backwards.
+      if (state.status !== "processing") return state;
+      return { ...state, progress: Math.max(state.progress, event.progress) };
 
     case "SUCCESS":
       if (state.status !== "processing") return state;
