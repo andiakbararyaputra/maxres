@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    maxres_scaffold_lib::run()
+    maxres_lib::run()
 }

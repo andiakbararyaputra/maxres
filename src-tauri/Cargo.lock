@@ -1737,7 +1737,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "maxres-scaffold"
+name = "maxres"
 version = "0.1.0"
 dependencies = [
  "image",
