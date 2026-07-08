@@ -26,9 +26,15 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "category": "GraphicsAndDesign",
+    "shortDescription": "Free, offline AI image upscaler",
+    "longDescription": "MaxRes upscales photos 2x/4x/8x/16x using AI, 100% offline. Your photos never leave your device.",
+    "licenseFile": "../LICENSE",
     "externalBin": ["binaries/upscaler"],
     "resources": {
-      "binaries/models": "models"
+      "binaries/models": "models",
+      "binaries/vcomp140.dll": "vcomp140.dll",
+      "binaries/vcomp140d.dll": "vcomp140d.dll"
     },
     "icon": [
       "icons/32x32.png",

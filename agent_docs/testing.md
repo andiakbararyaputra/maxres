@@ -15,19 +15,19 @@
 
 Run after each feature; ALL must pass before a phase is "done":
 
-| #   | Test                                            | Expected                                                                      |
-| --- | ----------------------------------------------- | ----------------------------------------------------------------------------- |
-| 1   | Small JPG at 2x, 4x, 8x                         | Correct output size, visibly sharper, saved as `name_Nx.png` next to original |
-| 2   | Large PNG at 4x                                 | Completes with progress feedback (no frozen UI)                               |
-| 3   | Transparent PNG                                 | Transparency preserved (auto-verified 2026-07-08: alpha kept)                 |
-| 4   | Filename with spaces & unicode                  | Works (auto-verified 2026-07-08)                                              |
-| 5   | Non-image file dropped (.pdf/.txt)              | Friendly error, app stays usable                                              |
+| #   | Test                                            | Expected                                                                                                          |
+| --- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| 1   | Small JPG at 2x, 4x, 8x                         | Correct output size, visibly sharper, saved as `name_Nx.png` next to original                                     |
+| 2   | Large PNG at 4x                                 | Completes with progress feedback (no frozen UI)                                                                   |
+| 3   | Transparent PNG                                 | Transparency preserved (auto-verified 2026-07-08: alpha kept)                                                     |
+| 4   | Filename with spaces & unicode                  | Works (auto-verified 2026-07-08)                                                                                  |
+| 5   | Non-image file dropped (.pdf/.txt)              | Friendly error, app stays usable                                                                                  |
 | 6   | Corrupt `.png` (valid ext, garbage bytes)       | Friendly error — engine exits 0 with NO output, app checks file_exists + decode-failed (auto-verified 2026-07-08) |
-| 7   | Output name collision (photo_4x.png exists)     | Saves `photo_4x (2).png` (Rust `unique_output_path`, unit-tested)             |
-| 8   | 16x on a big image                              | Pre-flight warning shown; on failure, graceful "try a smaller factor"         |
-| 9   | Cancel mid-processing                           | Job stops, app returns to idle, no orphan temp files                          |
-| 10  | **Offline test:** Wi-Fi disabled → full upscale | Succeeds (core promise)                                                       |
-| 11  | Zero-instruction test                           | A first-time user completes an upscale unaided                                |
+| 7   | Output name collision (photo_4x.png exists)     | Saves `photo_4x (2).png` (Rust `unique_output_path`, unit-tested)                                                 |
+| 8   | 16x on a big image                              | Pre-flight warning shown; on failure, graceful "try a smaller factor"                                             |
+| 9   | Cancel mid-processing                           | Job stops, app returns to idle, no orphan temp files                                                              |
+| 10  | **Offline test:** Wi-Fi disabled → full upscale | Succeeds (core promise)                                                                                           |
+| 11  | Zero-instruction test                           | A first-time user completes an upscale unaided                                                                    |
 
 **Automated error-matrix script** (rows 3-7 core cases): run the engine directly with the checks in commit history; frontend logic covered by Vitest, Rust helpers by `cargo test --lib`.
 
