@@ -3,5 +3,12 @@
   "identifier": "default",
   "description": "MaxRes main window — minimal permissions by design (offline promise). Approved additions only: core + dialog (Phase 1). Sidecar/fs arrive with Phase 2 approval.",
   "windows": ["main"],
-  "permissions": ["core:default", "dialog:default"]
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [{ "name": "binaries/upscaler", "sidecar": true, "args": true }]
+    }
+  ]
 }

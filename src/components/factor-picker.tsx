@@ -1,18 +1,18 @@
 /*
  * FactorPicker — the 2x / 4x / 8x / 16x buttons.
- * Phase 1: visual only (disabled) — the AI engine arrives in Phase 2,
- * and clicking will start an upscale in Phase 3.
+ * Buttons enable per-factor: Phase 2 enables the engine-native 4x;
+ * 2x/8x/16x follow in Phase 3 with pass-chaining.
  */
 
 import { FACTORS, EXPERIMENTAL_FACTOR, type Factor } from "../lib/app-state";
 
 type FactorPickerProps = {
-  /** Buttons stay disabled until upscaling is implemented (Phase 3). */
-  disabled: boolean;
+  /** Factors that may be clicked right now (empty while idle/processing). */
+  enabledFactors: readonly Factor[];
   onSelect: (factor: Factor) => void;
 };
 
-export function FactorPicker({ disabled, onSelect }: FactorPickerProps) {
+export function FactorPicker({ enabledFactors, onSelect }: FactorPickerProps) {
   return (
     <div className="factor-picker" role="group" aria-label="Upscale factor">
       {FACTORS.map((factor) => (
@@ -20,7 +20,7 @@ export function FactorPicker({ disabled, onSelect }: FactorPickerProps) {
           key={factor}
           type="button"
           className="factor-btn"
-          disabled={disabled}
+          disabled={!enabledFactors.includes(factor)}
           onClick={() => onSelect(factor)}
           aria-label={`Upscale ${factor} times${
             factor === EXPERIMENTAL_FACTOR ? " (experimental)" : ""

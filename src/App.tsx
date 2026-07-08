@@ -2,8 +2,8 @@
  * MaxRes — one screen, one job.
  * App.tsx owns the state machine and talks to Tauri (drag-drop events,
  * file dialog). Components below it just render state.
- * Phase 1 scope: select a file (drop or browse) and show its path.
- * The factor buttons become functional in Phase 3.
+ * Phase 2 scope: the engine-native 4x pass runs end-to-end.
+ * 2x/8x/16x chaining arrives in Phase 3.
  */
 
 import { useEffect, useReducer, useState } from "react";
@@ -11,14 +11,23 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { open } from "@tauri-apps/plugin-dialog";
 import { DropZone } from "./components/drop-zone";
 import { FactorPicker } from "./components/factor-picker";
-import { initialState, reduce } from "./lib/app-state";
+import { initialState, reduce, type Factor } from "./lib/app-state";
 import {
   isSupportedImagePath,
   IMAGE_DIALOG_FILTER,
   UNSUPPORTED_FILE_MESSAGE,
 } from "./lib/files";
+import { upscale } from "./lib/upscaler";
 import "./styles/tokens.css";
 import "./App.css";
+
+/** Phase 2: only the engine-native 4x is live. Phase 3 unlocks the rest. */
+const AVAILABLE_FACTORS: readonly Factor[] = [4];
+
+function fileName(path: string): string {
+  const parts = path.split(/[/\\]/);
+  return parts[parts.length - 1] ?? path;
+}
 
 function App() {
   const [state, dispatch] = useReducer(reduce, initialState);
@@ -53,6 +62,7 @@ function App() {
   }, []);
 
   async function browse() {
+    if (state.status === "processing") return; // one job at a time
     const picked = await open({
       multiple: false,
       directory: false,
@@ -61,10 +71,32 @@ function App() {
     if (typeof picked === "string") selectFile(picked);
   }
 
+  /** fileReady + factor click → run the engine → done or error. */
+  async function startUpscale(factor: Factor) {
+    if (state.status !== "fileReady") return;
+    const inputPath = state.filePath;
+    dispatch({ type: "START", factor });
+    const result = await upscale(inputPath, factor);
+    if (result.ok) {
+      dispatch({ type: "SUCCESS", outputPath: result.outputPath });
+    } else {
+      dispatch({ type: "FAIL", message: result.message });
+    }
+  }
+
   const filePath =
-    state.status === "fileReady" || state.status === "processing"
+    state.status === "fileReady" ||
+    state.status === "processing" ||
+    state.status === "done"
       ? state.filePath
       : null;
+
+  const enabledFactors = state.status === "fileReady" ? AVAILABLE_FACTORS : [];
+
+  const factorHint =
+    state.status === "idle"
+      ? "Drop a photo to choose a size"
+      : "4x is ready — more sizes arrive in the next build step";
 
   return (
     <main className="app">
@@ -78,25 +110,34 @@ function App() {
       />
 
       <div>
-        <FactorPicker
-          disabled
-          onSelect={() => {
-            /* Enabled in Phase 3 when the AI engine is wired up. */
-          }}
-        />
-        <p className="factor-hint">
-          Pick a size — the AI engine arrives in the next build step
-        </p>
+        <FactorPicker enabledFactors={enabledFactors} onSelect={startUpscale} />
+        {(state.status === "idle" || state.status === "fileReady") && (
+          <p className="factor-hint">{factorHint}</p>
+        )}
       </div>
 
-      <p
-        className={`status-line${
-          state.status === "error" ? " status-line--error" : ""
-        }`}
-        role="status"
-      >
-        {state.status === "error" ? state.message : ""}
-      </p>
+      <div className="status-line" role="status">
+        {state.status === "processing" && (
+          <span>Upscaling {state.factor}x… big photos can take a minute</span>
+        )}
+        {state.status === "done" && (
+          <>
+            <span className="status-line--success">
+              Saved as {fileName(state.outputPath)} next to your original
+            </span>
+            <button
+              type="button"
+              className="btn-reset"
+              onClick={() => dispatch({ type: "RESET" })}
+            >
+              Upscale another
+            </button>
+          </>
+        )}
+        {state.status === "error" && (
+          <span className="status-line--error">{state.message}</span>
+        )}
+      </div>
 
       <footer className="app__footer">
         <span className="app__footer-dot" aria-hidden="true">

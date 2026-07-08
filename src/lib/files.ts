@@ -23,3 +23,19 @@ export const IMAGE_DIALOG_FILTER = {
   name: "Images",
   extensions: [...SUPPORTED_EXTENSIONS],
 };
+
+/**
+ * Where the result is saved (PRD): next to the original, clearly named.
+ * `/photos/mum.jpg` + 4  →  `/photos/mum_4x.png`
+ * Output is always PNG — lossless, so we never degrade what the AI produced.
+ */
+export function deriveOutputPath(inputPath: string, factor: number): string {
+  const dot = inputPath.lastIndexOf(".");
+  const slash = Math.max(
+    inputPath.lastIndexOf("/"),
+    inputPath.lastIndexOf("\\"),
+  );
+  // Only strip a dot that belongs to the file name, not a folder name.
+  const base = dot > slash ? inputPath.slice(0, dot) : inputPath;
+  return `${base}_${factor}x.png`;
+}
