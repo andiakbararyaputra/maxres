@@ -1,0 +1,6 @@
+dist
+node_modules
+src-tauri/target
+src-tauri/gen
+vibe-coding-prompt-template
+package-lock.json

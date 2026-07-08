@@ -12,6 +12,7 @@
 - **Backend / Database / Auth:** NONE. Fully local app. No server, no accounts, no network permission.
 
 ## Setup Commands
+
 ```bash
 # prerequisites: Node.js LTS (nodejs.org), Rust (rustup.rs)
 # Linux also needs: libwebkit2gtk-4.1-dev build-essential libssl-dev libayatana-appindicator3-dev librsvg2-dev
@@ -21,6 +22,7 @@ npm run tauri build  # produce installers (.msi/.exe, .dmg, .AppImage/.deb)
 ```
 
 ## Sidecar Facts (critical — easy to get wrong)
+
 - Executable lives in `src-tauri/binaries/` and MUST be renamed to include the platform target triple, e.g. `upscaler-x86_64-unknown-linux-gnu`, `upscaler-x86_64-pc-windows-msvc.exe`, `upscaler-aarch64-apple-darwin`
 - The `models/` folder ships alongside it (bundle as Tauri resources)
 - Declared in `tauri.conf.json` under `bundle.externalBin` and permitted in the capabilities file
@@ -29,25 +31,40 @@ npm run tauri build  # produce installers (.msi/.exe, .dmg, .AppImage/.deb)
   - **4x:** one pass. **2x:** one pass → canvas downscale 50%. **8x:** two passes → downscale 50%. **16x:** two passes (warn first — RAM/VRAM heavy)
 
 ## Error Handling Pattern
+
 ```typescript
 // Canonical pattern: every sidecar run returns a typed result — no thrown
 // exceptions reach the UI, no silent failures (PRD quality standard).
 type UpscaleResult =
   | { ok: true; outputPath: string }
-  | { ok: false; reason: 'bad-input' | 'engine-failed' | 'out-of-memory' | 'cancelled'; message: string };
+  | {
+      ok: false;
+      reason: "bad-input" | "engine-failed" | "out-of-memory" | "cancelled";
+      message: string;
+    };
 
-async function runEngine(input: string, output: string): Promise<UpscaleResult> {
-  const command = Command.sidecar('binaries/upscaler', ['-i', input, '-o', output, '-n', 'realesrgan-x4plus']);
+async function runEngine(
+  input: string,
+  output: string,
+): Promise<UpscaleResult> {
+  const command = Command.sidecar("binaries/upscaler", [
+    "-i",
+    input,
+    "-o",
+    output,
+    "-n",
+    "realesrgan-x4plus",
+  ]);
   const result = await command.execute();
   if (result.code !== 0) {
     // stderr mentioning vkAllocateMemory usually means the GPU ran out of memory
-    const oom = result.stderr.includes('vkAllocateMemory');
+    const oom = result.stderr.includes("vkAllocateMemory");
     return {
       ok: false,
-      reason: oom ? 'out-of-memory' : 'engine-failed',
+      reason: oom ? "out-of-memory" : "engine-failed",
       message: oom
-        ? 'Not enough memory for this size. Try 4x instead.'
-        : 'The upscaler could not process this image. Is it a valid JPG/PNG?',
+        ? "Not enough memory for this size. Try 4x instead."
+        : "The upscaler could not process this image. Is it a valid JPG/PNG?",
     };
   }
   return { ok: true, outputPath: output };
@@ -55,12 +72,17 @@ async function runEngine(input: string, output: string): Promise<UpscaleResult> 
 ```
 
 ## Styling & Component Example
+
 ```tsx
 // Components use design tokens only — never raw hex values.
 // tokens.css: --bg:#101014 --surface:#1a1a21 --border:#2a2a33 --text:#e8e8ee
 //             --text-dim:#8a8a96 --accent:#4f8cff --success:#3ddc84
 //             --danger:#ff5c5c --radius:12px
-export function FactorButton({ factor, experimental, onSelect }: {
+export function FactorButton({
+  factor,
+  experimental,
+  onSelect,
+}: {
   factor: 2 | 4 | 8 | 16;
   experimental?: boolean;
   onSelect: (factor: number) => void;
@@ -68,7 +90,7 @@ export function FactorButton({ factor, experimental, onSelect }: {
   return (
     <button
       className="factor-btn" /* styled via tokens: background var(--surface), 48px min height */
-      aria-label={`Upscale ${factor} times${experimental ? ' (experimental)' : ''}`}
+      aria-label={`Upscale ${factor} times${experimental ? " (experimental)" : ""}`}
       onClick={() => onSelect(factor)}
     >
       {factor}x{experimental && <span className="badge">Experimental</span>}
@@ -78,6 +100,7 @@ export function FactorButton({ factor, experimental, onSelect }: {
 ```
 
 ## Naming Conventions
+
 - **Files:** kebab-case (`upscaler.ts`, `factor-button.tsx`)
 - **Components:** PascalCase (`FactorButton`)
 - **Functions/variables:** camelCase (`upscaleImage`)

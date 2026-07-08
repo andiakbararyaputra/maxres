@@ -1,49 +1,109 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
+/*
+ * MaxRes — one screen, one job.
+ * App.tsx owns the state machine and talks to Tauri (drag-drop events,
+ * file dialog). Components below it just render state.
+ * Phase 1 scope: select a file (drop or browse) and show its path.
+ * The factor buttons become functional in Phase 3.
+ */
+
+import { useEffect, useReducer, useState } from "react";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { open } from "@tauri-apps/plugin-dialog";
+import { DropZone } from "./components/drop-zone";
+import { FactorPicker } from "./components/factor-picker";
+import { initialState, reduce } from "./lib/app-state";
+import {
+  isSupportedImagePath,
+  IMAGE_DIALOG_FILTER,
+  UNSUPPORTED_FILE_MESSAGE,
+} from "./lib/files";
+import "./styles/tokens.css";
 import "./App.css";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const [state, dispatch] = useReducer(reduce, initialState);
+  const [isDragActive, setIsDragActive] = useState(false);
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
+  /** Shared by drag-drop and browse: validate, then accept or reject. */
+  function selectFile(path: string) {
+    if (isSupportedImagePath(path)) {
+      dispatch({ type: "FILE_SELECTED", filePath: path });
+    } else {
+      dispatch({ type: "FILE_REJECTED", message: UNSUPPORTED_FILE_MESSAGE });
+    }
   }
 
+  // Tauri delivers OS-level file drops as window events (not HTML5 drag&drop).
+  useEffect(() => {
+    const unlisten = getCurrentWebview().onDragDropEvent((event) => {
+      if (event.payload.type === "over") {
+        setIsDragActive(true);
+      } else if (event.payload.type === "drop") {
+        setIsDragActive(false);
+        const first = event.payload.paths[0];
+        if (first !== undefined) selectFile(first);
+      } else {
+        // "leave" — drag cancelled
+        setIsDragActive(false);
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
+
+  async function browse() {
+    const picked = await open({
+      multiple: false,
+      directory: false,
+      filters: [IMAGE_DIALOG_FILTER],
+    });
+    if (typeof picked === "string") selectFile(picked);
+  }
+
+  const filePath =
+    state.status === "fileReady" || state.status === "processing"
+      ? state.filePath
+      : null;
+
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <main className="app">
+      <h1 className="app__title">MaxRes</h1>
+      <p className="app__subtitle">Make any photo print-ready</p>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
+      <DropZone
+        filePath={filePath}
+        isDragActive={isDragActive}
+        onBrowse={browse}
+      />
 
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
+      <div>
+        <FactorPicker
+          disabled
+          onSelect={() => {
+            /* Enabled in Phase 3 when the AI engine is wired up. */
+          }}
         />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
+        <p className="factor-hint">
+          Pick a size — the AI engine arrives in the next build step
+        </p>
+      </div>
+
+      <p
+        className={`status-line${
+          state.status === "error" ? " status-line--error" : ""
+        }`}
+        role="status"
+      >
+        {state.status === "error" ? state.message : ""}
+      </p>
+
+      <footer className="app__footer">
+        <span className="app__footer-dot" aria-hidden="true">
+          ●
+        </span>
+        100% offline — your photos never leave your device
+      </footer>
     </main>
   );
 }

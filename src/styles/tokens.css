@@ -1,0 +1,38 @@
+/*
+ * MaxRes design tokens — the ONLY place colors/sizes are defined.
+ * Components must reference these variables; raw hex values in
+ * components are forbidden (see agent_docs/code_patterns.md).
+ * Palette source: docs/TechDesign-MaxRes-MVP.md — "clean, dark, minimal".
+ */
+:root {
+  /* Colors */
+  --bg: #101014; /* near-black app background */
+  --surface: #1a1a21; /* cards / drop zone */
+  --surface-hover: #20202a; /* drop zone while dragging over */
+  --border: #2a2a33;
+  --text: #e8e8ee;
+  --text-dim: #8a8a96;
+  --accent: #4f8cff; /* single blue accent for actions */
+  --success: #3ddc84;
+  --danger: #ff5c5c;
+  --warning: #ffb84f; /* experimental badge */
+
+  /* Shape & spacing */
+  --radius: 12px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 40px;
+
+  /* Typography */
+  --font-main: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 28px;
+
+  /* Touch targets (PRD: big touch-friendly, 48px minimum) */
+  --tap-target: 48px;
+}
