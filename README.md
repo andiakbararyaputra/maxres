@@ -7,6 +7,10 @@ MaxRes is a free, 100% offline AI image upscaler. Drop a photo in, pick a size
 the original. Your photos never leave your device — no accounts, no uploads,
 no telemetry, no network calls.
 
+## Preview
+
+![MaxRes Offline AI Upscaler Preview](docs/maxres-preview.png)
+
 ## Why MaxRes?
 
 - **Free forever** — no subscriptions, no paywalls
